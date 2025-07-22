@@ -15,7 +15,7 @@ while True:
         mav.setMSG_ID(UserChooseHandler.choose_msg())
 
     # Edit Here
-    data : list = mav.readData(isPrint=True)
+    data : list = mav.readData(enPrint=True, enLog=True)
 
     # If you want to access value
     # if(data != None):

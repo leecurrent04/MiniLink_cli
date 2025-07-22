@@ -15,8 +15,9 @@ class MiniLink():
     msgs_dict_ori : dict= {}
 
     packet = {
+        'Header' : 0, 'Length' : 0, 'SEQ' : 0, 'MSG ID' : 0, 
         'data' : numpy.zeros(1024, int), 
-        'Header' : 0, 'Length' : 0, 'SEQ' : 0, 'MSG ID' : 0, 'CRC' : 0
+        'CRC' : 0
     }
 
     ser:serial = None
@@ -31,21 +32,22 @@ class MiniLink():
 
     def readMSGList(self):
         print("[MiniLink] loading messages list")
+
         while 1:
             if(self.readByte(self.packet) != 0): continue
             data : numpy.array = self.packet['data']
-            msg_id = data[3] | data[4] << 8
+            msg_id:int= data[3] | data[4] << 8
 
-            self.packet['SEQ'] = data[2]
-            self.packet['MSG ID'] = msg_id
+            self.packet['SEQ'] : int = data[2]
+            self.packet['MSG ID'] : int = msg_id
 
             if(msg_id in list(self.msgs_dict.keys())):
                 return self.msgs_dict
 
-            self.msgs_dict.update({msg_id:self.msgs_dict_ori[msg_id]})
+            self.msgs_dict.update({int(msg_id):self.msgs_dict_ori[msg_id]})
 
     # 한 패킷을 받아서 출력
-    def readData(self, isPrint=None):
+    def readData(self, enPrint:bool=False, enLog:bool=False):
         if(self.readByte(self.packet) != 0): return None
 
         data : numpy.array = self.packet['data']
@@ -60,13 +62,22 @@ class MiniLink():
 
         self.msgs_dict[msg_id][2] = self.msgs_dict[msg_id][2] +1
 
-        saveLogFromList("packet-raw", data, isHex=True)
-        saveLogFromList(f"{self.msgs_dict[msg_id][0]}", self.xmlHandler.parser(msg_id, data[5:length-2], False))
+        # Log
+        if(enLog == True):
+            saveLogFromList("packet-raw", data, isHex=True)
+            saveLogFromList("msg_frequency", [i[2] for i in self.msgs_dict.values()], header=[i[0] for i in self.msgs_dict.values()])
+            saveLogFromList(f"{self.msgs_dict[msg_id][0]}", self.xmlHandler.parser(msg_id, data[5:length-2]), header=self.xmlHandler.getTitle(msg_id))
 
+        # print or return only selected value 
         if(self.__MSG_ID != self.packet['MSG ID']) :
             return None
 
-        return self.xmlHandler.parser(self.__MSG_ID, data[5:length-2], isPrint)
+        unpacked_data:list = self.xmlHandler.parser(self.__MSG_ID, data[5:length-2])
+
+        if(enPrint == True):
+            print(unpacked_data)
+
+        return unpacked_data
 
     def connect(self, port, baudrate=115200, MSG_ID=None):
         try:
@@ -85,7 +96,13 @@ class MiniLink():
             exit()
 
     def setMSG_ID(self, id):
+        if id not in list(self.msgs_dict.keys()):
+            print("[MiniLink] invaild message id");
+            return -1
+
+        print(self.xmlHandler.getTitle(id))
         self.__MSG_ID = id
+
         return
 
     # byte 단위로 데이터 받아옴

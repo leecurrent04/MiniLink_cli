@@ -11,10 +11,13 @@ class XmlHandler:
     def __init__(self):
         self.__loadXML()
 
+    # xml file load
     def __loadXML(self):
         self.fp = open("lib/MSG/common.xml", 'r')
         self.root = ET.fromstring(self.fp.read())
 
+
+    # load all msg list (ex. SCALED_IMU)
     def loadMSGList(self, msgs:dict):
         self.msgs_dict = msgs
         messages = self.root.find("messages").findall("message")
@@ -24,7 +27,19 @@ class XmlHandler:
 
         return msgs
 
-    def parser(self, id, rx:numpy.array, isPrint:bool):
+
+    # get key of values (ex. SCALED_IMU.xacc)
+    def getTitle(self, id):
+        data : list = []
+        fields = self.msgs_dict[id][1].findall("field")
+
+        for field in fields:
+            data.append(field.get("name"))
+
+        return data
+
+
+    def parser(self, id, rx:numpy.array):
         try:
             fields = self.msgs_dict[id][1].findall("field")
 
@@ -45,9 +60,6 @@ class XmlHandler:
                     case 'double': fmt=fmt+"d"
 
             unpacked_data : list = list(struct.unpack(fmt, bytes(list(rx))))
-
-            if(isPrint):
-                print(unpacked_data)
 
             return unpacked_data
 
