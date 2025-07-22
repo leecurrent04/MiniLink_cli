@@ -6,6 +6,7 @@ from lib.xmlHandler import XmlHandler
 from lib.Log import *
 
 MINILINK_VERSION = 0xFA
+CLI_NAME = "MiniLink"
 
 class MiniLink():
     xmlHandler = XmlHandler()
@@ -27,28 +28,74 @@ class MiniLink():
     def __init__(self):
         self.xmlHandler.loadMSGList(self.msgs_dict_ori)
 
-    def getMSGList(self):
+    # connect
+    # @detail : 새로운 장치에 연결
+    def connect(self, port, baudrate=115200, MSG_ID=None):
+        try:
+            self.ser = serial.Serial(port, baudrate, timeout=1)
+            self.__cnt = 0
+            print(f"[{CLI_NAME}] Connected to %s (%d)"%(port, baudrate))
+
+            if(MSG_ID != None):
+                self.chooseMessage(MSG_ID)
+
+            self.readMessageList()
+
+            print(f"[{CLI_NAME}] Press 'm' key to open the memu.")
+            return 0
+
+        except Exception as err:
+            print(err)
+            exit()
+
+
+    # chooseMessage()
+    # @detail : 화면에 표시할 메세지를 선택함
+    def chooseMessage(self, id):
+        if id not in list(self.msgs_dict.keys()):
+            print(f"[{CLI_NAME}] invaild message id");
+            return -1
+
+        print(self.xmlHandler.getTitle(id))
+        self.__MSG_ID = id
+
+        return
+
+
+    # getMessageList()
+    # @detail : 장치에서 전송하는 MSG 목록를 리턴
+    def getMessageList(self):
         return self.msgs_dict
 
-    def readMSGList(self):
-        print("[MiniLink] loading messages list")
 
-        while 1:
-            if(self.readByte(self.packet) != 0): continue
-            data : numpy.array = self.packet['data']
-            msg_id:int= data[3] | data[4] << 8
+    # readMessageList()
+    # @detail : 장치에서 전송하는 MSG 목록을 받아옴.
+    def readMessageList(self):
+        try:
+            print(f"[{CLI_NAME}] Loading the messages...")
 
-            self.packet['SEQ'] : int = data[2]
-            self.packet['MSG ID'] : int = msg_id
+            while 1:
+                if(self.__readByte(self.packet) != 0): continue
+                data : numpy.array = self.packet['data']
+                msg_id:int= data[3] | data[4] << 8
 
-            if(msg_id in list(self.msgs_dict.keys())):
-                return self.msgs_dict
+                self.packet['SEQ'] : int = data[2]
+                self.packet['MSG ID'] : int = msg_id
 
-            self.msgs_dict.update({int(msg_id):self.msgs_dict_ori[msg_id]})
+                if(msg_id in list(self.msgs_dict.keys())):
+                    print(f"[{CLI_NAME}] Found {len(list(self.msgs_dict.keys()))} messages!")
+                    return self.msgs_dict
 
-    # 한 패킷을 받아서 출력
-    def readData(self, enPrint:bool=False, enLog:bool=False):
-        if(self.readByte(self.packet) != 0): return None
+                self.msgs_dict.update({int(msg_id):self.msgs_dict_ori[msg_id]})
+
+        except Exception as err:
+            print(err)
+
+
+    # read()
+    # @detail : 한 패킷을 받아서 출력
+    def read(self, enPrint:bool=False, enLog:bool=False):
+        if(self.__readByte(self.packet) != 0): return None
 
         data : numpy.array = self.packet['data']
         length : int = self.packet['Length']
@@ -64,7 +111,7 @@ class MiniLink():
 
         # Log
         if(enLog == True):
-            saveLogFromList("packet-raw", data, isHex=True)
+            saveLogFromList("packet-raw", data[:length], isHex=True)
             saveLogFromList("msg_frequency", [i[2] for i in self.msgs_dict.values()], header=[i[0] for i in self.msgs_dict.values()])
             saveLogFromList(f"{self.msgs_dict[msg_id][0]}", self.xmlHandler.parser(msg_id, data[5:length-2]), header=self.xmlHandler.getTitle(msg_id))
 
@@ -79,41 +126,41 @@ class MiniLink():
 
         return unpacked_data
 
-    def connect(self, port, baudrate=115200, MSG_ID=None):
+
+    # send()
+    # @detail : message 전송
+    # @parm : data : list [MSG ID, [Payload]]
+    def send(self, data : list):
         try:
-            self.ser = serial.Serial(port, baudrate)
-            self.__cnt = 0
-            print("[%s %d] Connected!"%(port, baudrate))
+            self.packet['SEQ'] = self.packet['SEQ'] + 1
 
-            if(MSG_ID != None):
-                self.setMSG_ID(MSG_ID)
+            tx : list = [MINILINK_VERSION]
+            tx.append(7+len(data[1]))
+            tx.append(int(self.packet['SEQ']))
+            tx = tx + [(int(data[0]) & 0xff), (int(data[0]) >> 8)]
+            tx = tx + data[1]
 
-            self.readMSGList()
-            return 0
+            crc = int(self.calculate_crc(tx, len(tx)+2))
+            tx = tx + [(crc >> 8), (crc & 0xff)]
+
+            self.ser.write(bytes(tx))
+            print(f"[{CLI_NAME}] send : ", tx)
 
         except Exception as err:
             print(err)
-            exit()
 
-    def setMSG_ID(self, id):
-        if id not in list(self.msgs_dict.keys()):
-            print("[MiniLink] invaild message id");
-            return -1
 
-        print(self.xmlHandler.getTitle(id))
-        self.__MSG_ID = id
-
-        return
-
-    # byte 단위로 데이터 받아옴
-    def readByte(self, packet:dict):
+    # __readByte()
+    # @detail : byte 단위로 데이터 받아옴
+    def __readByte(self, packet:dict):
         try:
             data : numpy.array = packet['data']
 
             rx_byte = self.ser.read()  # 1바이트씩 읽기
+            if(rx_byte == b''): return 2;
 
             if(self.__cnt >= len(data)):
-                print("Must increase Buffer size! %d"%(len(data)))
+                print(f"{CLI_NAME} Have to increase Buffer size! {len(data)}")
                 self.__cnt = 0
 
             data[self.__cnt] = self.byte2int(rx_byte.hex())
@@ -143,19 +190,21 @@ class MiniLink():
 
         return 1
 
+
     def checkCRC(self):
         length : int= self.packet['Length']
         data : numpy.array = self.packet['data']
 
-        rxCRC = data[length-2]| data[length-1]<<8
-        retval = self.calulate_crc(data, length)
+        rxCRC = data[length-1]<<8 | data[length-2] 
+        retval = self.calculate_crc(data, length)
 
         return retval == rxCRC
 
-    def calulate_crc(self, data, length):
-        crc = 0x0000
+
+    def calculate_crc(self, data, length):
+        crc:numpy.uint16 = 0x0000
         for i in range(0, length -2):
-            crc ^= (data[i] << 8)
+            crc ^= numpy.uint16(data[i] << 8)
             for j in range(0, 8):
                 if (crc & 0x8000):
                     crc = (crc << 1) ^ 0x1021
@@ -164,5 +213,7 @@ class MiniLink():
 
         return crc&0xffff
 
+
     def byte2int(self, x):
         return int("0x"+str(x),16)
+

@@ -64,5 +64,7 @@ class XmlHandler:
             return unpacked_data
 
         except Exception as err:
-            print(f"{err} ({len(rx)})")
+            print(f"{err} ({len(rx)}) : ")
             for i in rx: print("%02x "%(i), end= '')
+            print("")
+            

@@ -5,17 +5,18 @@ mav = MiniLink()
 userInput = UserInputHandler()
 
 port, baudrate = userInput.chooseInit()
-
 mav.connect(port, baudrate)
-mav.setMSG_ID(userInput.choose_msgInit(mav.readMSGList()))
+
+userInput.updateMessageList(mav.getMessageList())
 
 while True:
-    retVal = userInput.whileInputHandler()
-    if retVal != None:
-        mav.setMSG_ID(retVal)
+    retVal : list = userInput.whileInputHandler()
+    match(retVal[0]):
+        case 'chg_msg': mav.chooseMessage(retVal[1])
+        case 'send_msg' : mav.send(retVal[1])
 
     # True or False
-    data : list = mav.readData(enPrint=True, enLog=True)
+    data : list = mav.read(enPrint=True, enLog=True)
 
     # Edit Here
     # If you want to access value
