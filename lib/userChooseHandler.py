@@ -1,8 +1,7 @@
 import serial.tools.list_ports
 import questionary
 
-# from .Handler import handlerDict
-from .MAVLink import handlerDict
+from .MiniLink import MiniLink
 
 class UserChooseHandler():
     port = None;
@@ -14,13 +13,13 @@ class UserChooseHandler():
         try:
             cl.port = cl.__choose_port_init()
             cl.baudrate = cl.__choose_buadrate_init()
-            cl.msg = cl.__choose_msg_init()
+            # cl.msg = cl.__choose_msg_init()
 
         except Exception as err:
             print(err)
             cl.chooseInit()
 
-        return [cl.port, cl.baudrate, cl.msg]
+        return [cl.port, cl.baudrate]
 
     def choose_port(addition_item=None):
         lists = [f"{port.device} - {port.description}" for port in serial.tools.list_ports.comports()]
@@ -57,8 +56,8 @@ class UserChooseHandler():
         return int(answer)
 
 
-    def choose_msg(addition_item=None):
-        lists = [f"{handler[0]} : {handler[1].__name__}" for handler in list(handlerDict.items())]
+    def choose_msg(handlerDict:dict, addition_item=None):
+        lists = [f"{handler[0]} : {handler[1][0]}" for handler in list(handlerDict.items())]
 
         if(addition_item!=None) :
             lists.append(addition_item)
@@ -68,7 +67,7 @@ class UserChooseHandler():
             choices = lists
         ).ask()
 
-        if answer in addition_item:
+        if addition_item != None and answer in addition_item:
             return answer
 
         return int(answer.split(" : ")[0])
@@ -101,16 +100,16 @@ class UserChooseHandler():
 
         return cl.__choose_buadrate_init()
 
-    def __choose_msg_init():
-        cl = UserChooseHandler
+    # def __choose_msg_init():
+    #     cl = UserChooseHandler
 
-        answer = cl.choose_msg("a) ../")
+    #     answer = cl.choose_msg("a) ../")
 
-        if(answer=="a) ../"):
-            cl.port = cl.__choose_buadrate_init()
-            return cl.__choose_buadrate_init()
+    #     if(answer=="a) ../"):
+    #         cl.port = cl.__choose_buadrate_init()
+    #         return cl.__choose_buadrate_init()
 
-        return answer
+    #     return answer
 
         
 
