@@ -1,22 +1,23 @@
-import os
-import keyboard
-
-from lib.userChooseHandler import UserChooseHandler
 from lib.MiniLink import MiniLink
+from lib.userInputHandler import UserInputHandler
 
 mav = MiniLink()
-port, baudrate = UserChooseHandler.chooseInit()
+userInput = UserInputHandler()
+
+port, baudrate = userInput.chooseInit()
+
 mav.connect(port, baudrate)
-mav.setMSG_ID(UserChooseHandler.choose_msg(mav.readMSGList()))
+mav.setMSG_ID(userInput.choose_msgInit(mav.readMSGList()))
 
 while True:
-    if keyboard.is_pressed('q'): break
-    if keyboard.is_pressed('s'): 
-        mav.setMSG_ID(UserChooseHandler.choose_msg())
+    retVal = userInput.whileInputHandler()
+    if retVal != None:
+        mav.setMSG_ID(retVal)
 
-    # Edit Here
+    # True or False
     data : list = mav.readData(enPrint=True, enLog=True)
 
+    # Edit Here
     # If you want to access value
     # if(data != None):
     #     print(data)
