@@ -1,3 +1,4 @@
+import os
 import sys
 import serial
 import numpy
@@ -5,32 +6,47 @@ import numpy
 from lib.xmlHandler import XmlHandler
 from lib.Log import *
 
+
 MINILINK_VERSION = 0xFA
 CLI_NAME = "MiniLink"
 
+
 class MiniLink():
-    xmlHandler = XmlHandler()
-
-    # {id:[name, addr, count]}
-    msgs_dict : dict= {}
-    msgs_dict_ori : dict= {}
-
+    ser:serial = None
     packet = {
         'Header' : 0, 'Length' : 0, 'SEQ' : 0, 'MSG ID' : 0, 
         'data' : numpy.zeros(1024, int), 
         'CRC' : 0
     }
-
-    ser:serial = None
     __cnt:int = 0
-    __MSG_ID = None
+    __MSG_ID:int = None
+
+    xmlHandler = XmlHandler()
+
+    msgs_dict : dict= {}
+    msgs_dict_ori : dict= {}
+
 
     def __init__(self):
-        self.xmlHandler.loadMSGList(self.msgs_dict_ori)
+        self.xmlHandler.loadMessageListFromXML(self.msgs_dict_ori)
+        return;
 
-    # connect
-    # @detail : 새로운 장치에 연결
-    def connect(self, port, baudrate=115200, MSG_ID=None):
+
+    def connect(self, port, baudrate:int=115200, MSG_ID:int=None):
+        '''
+        # connect()
+        장치에 연결한다.
+
+        Params :
+            port - 연결할 포트
+            baudrate `int` - 보드레이트
+            MSG_ID `int` - Message ID
+
+        Returns :
+            0 - 선택됨
+            -1 - 유효하지 않은 메세지 번호
+        '''
+
         try:
             self.ser = serial.Serial(port, baudrate, timeout=1)
             self.__cnt = 0
@@ -39,67 +55,138 @@ class MiniLink():
             if(MSG_ID != None):
                 self.chooseMessage(MSG_ID)
 
-            self.readMessageList()
+            self.updateMessageList()
 
             print(f"[{CLI_NAME}] Press 'm' key to open the memu.")
             return 0
 
         except Exception as err:
-            print(err)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
             exit()
 
 
-    # chooseMessage()
-    # @detail : 화면에 표시할 메세지를 선택함
-    def chooseMessage(self, id):
+    def chooseMessage(self, id:int):
+        '''
+        # chooseMessage()
+        화면에 표시할 메세지를 선택한다.
+        갱신하는 함수는 `updateMessageList()`
+
+        Params :
+            id `int` - Message ID
+
+        Returns :
+            0 - 선택됨
+            1 - 유효하지 않은 메세지 번호
+        '''
+
         if id not in list(self.msgs_dict.keys()):
             print(f"[{CLI_NAME}] invaild message id");
-            return -1
+            return 1
 
-        print(self.xmlHandler.getTitle(id))
+        print(self.xmlHandler.getMessageColumnNames(id))
         self.__MSG_ID = id
 
-        return
+        return 0
 
 
-    # getMessageList()
-    # @detail : 장치에서 전송하는 MSG 목록를 리턴
+    def getFrequency(self):
+        '''
+        # getFrequency()
+        수신 받은 message의 빈도를 출력한다.
+
+        Returns :
+            [names, counts]
+            names `list` - message의 이름
+            counts `list` - message의 빈도 값
+        '''
+        names:list= [i[0] for i in self.msgs_dict.values()]
+        counts:list=  [i[2] for i in self.msgs_dict.values()]
+
+        return [names, counts]
+
+
     def getMessageList(self):
+        '''
+        # getMessageList()
+        수신 받은 Message의 목록을 반환한다.
+        갱신하는 함수는 `updateMessageList()`
+
+        Returns :
+            self.msgs_dict `dict`
+            {id:[name, instance, count]}
+        '''
         return self.msgs_dict
 
 
-    # readMessageList()
-    # @detail : 장치에서 전송하는 MSG 목록을 받아옴.
-    def readMessageList(self):
-        try:
-            print(f"[{CLI_NAME}] Loading the messages...")
+    def getMessageName(self):
+        '''
+        # getMessageName()
+        현재 반환(출력)하고 있는 Message의 이름을 반환한다.
 
-            while 1:
-                if(self.__readByte(self.packet) != 0): continue
-                data : numpy.array = self.packet['data']
-                msg_id:int= data[3] | data[4] << 8
-
-                self.packet['SEQ'] : int = data[2]
-                self.packet['MSG ID'] : int = msg_id
-
-                if(msg_id in list(self.msgs_dict.keys())):
-                    print(f"[{CLI_NAME}] Found {len(list(self.msgs_dict.keys()))} messages!")
-                    return self.msgs_dict
-
-                self.msgs_dict.update({int(msg_id):self.msgs_dict_ori[msg_id]})
-
-        except Exception as err:
-            print(err)
+        Returns :
+            name `str`
+        '''
+        return self.xmlHandler.getMessageName(self.__MSG_ID)
 
 
-    # read()
-    # @detail : 한 패킷을 받아서 출력
+    def getMessageColumnNames(self):
+        '''
+        # getMessageColumnNames()
+        현재 반환(출력)하고 있는 Message의 속성들의 이름 출력한다.
+
+        Returns :
+            name `list(str)`
+        '''
+        return self.xmlHandler.getMessageColumnNames(self.__MSG_ID)
+
+
+    def getMessageColumnTypes(self):
+        '''
+        # getMessageColumnTypes()
+        현재 반환(출력)하고 있는 Message의 속성들의 타입 출력한다.
+
+        Returns :
+            name `list(str)`
+        '''
+        return self.xmlHandler.getMessageColumnTypes(self.__MSG_ID)
+
+
+    def getPayload(self):
+        '''
+        ## getPayload()
+        수신 받은 패킷 중 Payload 부분만 출력한다.
+        
+        Returns :
+            Payload `list`
+        '''
+        data : numpy.array = self.packet['data']
+        length : int = self.packet['Length']
+
+        return data[5:length-2]
+
+
     def read(self, enPrint:bool=False, enLog:bool=False):
+        '''
+        # read()
+        한 패킷을 수신한다.
+
+        Params :
+            enPrint `bool` - print 유무
+            enLog `bool` - Log 저장 유무
+
+        Returns :
+            unpacked_data `list` - 자료형에 맞게 가공된 payload
+            None - 원하는 메세지가 아닐 때
+        '''
+
         if(self.__readByte(self.packet) != 0): return None
 
         data : numpy.array = self.packet['data']
         length : int = self.packet['Length']
         msg_id = data[3] | data[4] << 8
+        payload : numpy.array = self.getPayload()
 
         self.packet['SEQ'] = data[2]
         self.packet['MSG ID'] = msg_id
@@ -111,15 +198,17 @@ class MiniLink():
 
         # Log
         if(enLog == True):
+            messageName:str = self.xmlHandler.getMessageName(msg_id)
+
             saveLogFromList("packet-raw", data[:length], isHex=True)
-            saveLogFromList("msg_frequency", [i[2] for i in self.msgs_dict.values()], header=[i[0] for i in self.msgs_dict.values()])
-            saveLogFromList(f"{self.msgs_dict[msg_id][0]}", self.xmlHandler.parser(msg_id, data[5:length-2]), header=self.xmlHandler.getTitle(msg_id))
+            saveLogFromList("msg_frequency", self.getFrequency()[1], columnName=self.getFrequency()[0])
+            saveLogFromList(f"{messageName}", self.xmlHandler.parser(msg_id, payload), columnName=self.xmlHandler.getMessageColumnNames(msg_id))
 
         # print or return only selected value 
         if(self.__MSG_ID != self.packet['MSG ID']) :
             return None
 
-        unpacked_data:list = self.xmlHandler.parser(self.__MSG_ID, data[5:length-2])
+        unpacked_data:list = self.xmlHandler.parser(self.__MSG_ID, payload)
 
         if(enPrint == True):
             print(unpacked_data)
@@ -127,10 +216,20 @@ class MiniLink():
         return unpacked_data
 
 
-    # send()
-    # @detail : message 전송
-    # @parm : data : list [MSG ID, [Payload]]
     def send(self, data : list):
+        '''
+        # send()
+        FC에 message 전송한다.
+
+        Params :
+            data `list` 
+            [MSG ID, [Payload]]
+        
+        Returns :
+            0 : 정상 송신
+            1 : 송신 에러
+        '''
+
         try:
             self.packet['SEQ'] = self.packet['SEQ'] + 1
 
@@ -146,62 +245,50 @@ class MiniLink():
             self.ser.write(bytes(tx))
             print(f"[{CLI_NAME}] send : ", tx)
 
+            return 0;
+
         except Exception as err:
-            print(err)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
+            return 1;
 
 
-    # __readByte()
-    # @detail : byte 단위로 데이터 받아옴
-    def __readByte(self, packet:dict):
+    def updateMessageList(self):
+        '''
+        # updateMessageList()
+        수신 받은 Message의 목록을 갱신하고 반환 한다.
+
+        Returns :
+            self.msgs_dict `dict`
+            {id:[name, instance, count]}
+        '''
         try:
-            data : numpy.array = packet['data']
+            print(f"[{CLI_NAME}] Loading the messages...")
 
-            rx_byte = self.ser.read()  # 1바이트씩 읽기
-            if(rx_byte == b''): return 2;
+            while 1:
+                if(self.__readByte(self.packet) != 0): continue
+                data : numpy.array = self.packet['data']
+                msg_id:int= data[3] | data[4] << 8
 
-            if(self.__cnt >= len(data)):
-                print(f"{CLI_NAME} Have to increase Buffer size! {len(data)}")
-                self.__cnt = 0
+                self.packet['SEQ'] = int(data[2])
+                self.packet['MSG ID'] = int(msg_id)
 
-            data[self.__cnt] = self.byte2int(rx_byte.hex())
+                if(msg_id in list(self.msgs_dict.keys())):
+                    print(f"[{CLI_NAME}] Found {len(list(self.msgs_dict.keys()))} messages!")
+                    break;
 
-            match(self.__cnt):
-                case 0 : 
-                    if data[self.__cnt] not in [MINILINK_VERSION, 0xFD, 0xFE] :
-                        self.__cnt = 0
-                        return -1;
-                case 1 : 
-                    packet['Length'] = data[self.__cnt]
-                case _:
-                    if(self.__cnt == packet['Length'] -1):
-                        self.__cnt = 0
-                        if(packet['Length']>0 and self.checkCRC()):
-                            return 0
-                        return 1;
-                    elif (self.__cnt > packet['Length'] -1) :
-                        return -1;
+                self.msgs_dict.update({int(msg_id):self.msgs_dict_ori[msg_id]})
 
-            self.__cnt = self.__cnt + 1
+            return self.msgs_dict
+
+        except Exception as err:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
 
 
-        except Exception as e:
-            print(e)
-            sys.exit(0)
-
-        return 1
-
-
-    def checkCRC(self):
-        length : int= self.packet['Length']
-        data : numpy.array = self.packet['data']
-
-        rxCRC = data[length-1]<<8 | data[length-2] 
-        retval = self.calculate_crc(data, length)
-
-        return retval == rxCRC
-
-
-    def calculate_crc(self, data, length):
+    def __calculate_crc(self, data, length):
         crc:numpy.uint16 = 0x0000
         for i in range(0, length -2):
             crc ^= numpy.uint16(data[i] << 8)
@@ -214,6 +301,71 @@ class MiniLink():
         return crc&0xffff
 
 
-    def byte2int(self, x):
+    def __checkCRC(self):
+        length : int= self.packet['Length']
+        data : numpy.array = self.packet['data']
+
+        rxCRC = data[length-1]<<8 | data[length-2] 
+        retval = self.__calculate_crc(data, length)
+
+        return retval == rxCRC
+
+
+    def __byte2int(self, x):
         return int("0x"+str(x),16)
+
+
+    def __readByte(self, packet:dict):
+        '''
+        # __readByte()
+        byte 단위로 데이터 받아옴
+
+        Returns :
+            -1 - 한 바이트를 정상 수신함.
+            0 - 한 패킷을 정상 수신함.
+            1 - 한 패킷을 정상 수신하였으나 CRC 오류.
+            2 - 패킷의 길이 오류
+            3 - 패킷이 MiniLink가 아님
+            4 - 입력 값이 바이트가 아님
+        '''
+
+        try:
+            data : numpy.array = packet['data']
+
+            rx_byte = self.ser.read()  # 1바이트씩 읽기
+            if(rx_byte == b''): return 4;
+
+            if(self.__cnt >= len(data)):
+                print(f"{CLI_NAME} Have to increase Buffer size! {len(data)}")
+                self.__cnt = 0
+
+            data[self.__cnt] = self.__byte2int(rx_byte.hex())
+
+            match(self.__cnt):
+                case 0 : 
+                    if data[self.__cnt] not in [MINILINK_VERSION, 0xFD, 0xFE] :
+                        self.__cnt = 0
+                        return 3;
+                case 1 : 
+                    packet['Length'] = data[self.__cnt]
+                case _:
+                    if(self.__cnt == packet['Length'] -1):
+                        self.__cnt = 0
+                        if(packet['Length']>0 and self.__checkCRC()):
+                            return 0
+                        return 1;
+
+                    elif (self.__cnt > packet['Length'] -1) :
+                        return 2;
+
+            self.__cnt = self.__cnt + 1
+
+
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
+            sys.exit(0)
+
+        return -1
 
