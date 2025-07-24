@@ -1,11 +1,21 @@
 import os
+import sys
 import datetime
 
 name_history : dict = {}
 
-# saveLog
-# @detail : 기존 로그 파일이 존재하면 추가함
-def saveLog(name:str, data:str, header=None):
+def saveLog(name:str, data:str, columnName=None):
+    '''
+    # saveLog()
+    로그 파일을 저장.
+    파일 제목에 프로그램을 실행한 시간이 접두사로 붙음.
+
+    Params :
+        name `str` - 파일 제목
+        data `str` - 저장할 데이터
+        columnName `list` - 데이터의 속성명
+    '''
+
     try:
         if(os.path.isdir("./log") == False):
             os.makedirs("./log")
@@ -17,8 +27,8 @@ def saveLog(name:str, data:str, header=None):
 
             name_history.update({name:file_name})
 
-            if(header != None):
-                data = f"{header}\n{data}"
+            if(columnName != None):
+                data = f"{columnName}\n{data}"
         else :
             file_name = name_history[name]
         
@@ -29,9 +39,20 @@ def saveLog(name:str, data:str, header=None):
     except Exception as err:
         print(err)
 
-# saveLogFromList
-# @detail : 데이터가 list로 주어질 때, str로 변환해서 저장
-def saveLogFromList(name:str, data:list, isHex=False, header:list=None):
+
+def saveLogFromList(name:str, data:list, columnName:list=None, isHex:bool=False):
+    '''
+    # saveLogFromList()
+    data가 `list`로 주어질 때, `str`로 변환해서 저장
+    `saveLog()` 함수 호출
+
+    Params :
+        name `str` - 파일 제목
+        data `list` - 저장할 데이터
+        columnName `list` - 데이터의 속성명
+        isHex `bool` - 데이터의 16진수 유무
+    '''
+
     try:
         now = datetime.datetime.now().strftime('%Y-%m-%d(%H_%M_%S)')
 
@@ -43,10 +64,13 @@ def saveLogFromList(name:str, data:list, isHex=False, header:list=None):
             for i in data:
                 log = log + "%02x,"%i
 
-        if(header!=None):
-            header = f"timestamp,{','.join(header)}"
+        if(columnName!=None):
+            columnName = f"timestamp,{','.join(columnName)}"
 
-        saveLog(name, log, header)
+        saveLog(name, log, columnName)
 
     except Exception as err:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
         print(err)

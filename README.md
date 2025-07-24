@@ -1,4 +1,4 @@
-# NALDA_backend_serial_cli
+# MiniLink_cli
 
 > FC Firmware는 다음 [[Github] STM32-FC](https://github.com/NARAE-INHA-UNIV/STM32-FC)를 참고하세요.
 
@@ -86,3 +86,8 @@ $ python main.py
 [352388, -65, 305, 970, 152, -243, -60, 0, 0, 0, 0]
 [352489, -60, 305, 969, 182, -335, -60, 0, 0, 0, 0]
 ```
+
+
+## 코드 분석
+
+- [(doc) MiniLink.md](./docs/MiniLink.md) : MiniLink에서 사용하는 변수나 함수에 대한 설명
