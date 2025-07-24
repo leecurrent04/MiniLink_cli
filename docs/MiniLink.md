@@ -67,8 +67,9 @@ message 목록이 저장되는 딕셔너리<br>
 def __init__(self)
 def connect(self, port, baudrate:int=115200, MSG_ID:int=None)
 def chooseMessage(self, id:int)
-def getFrequency(self)
-def getMessageList(self)
+def getIDfromName(self, name:str)
+def getMessageFrequency(self, id:int)
+def getMessageList(self, selectId:bool=False, selectNames:bool=False, selectCounts:bool=False)
 def getMessageName(self)
 def getMessageColumnNames(self)
 def getMessageColumnTypes(self)
@@ -128,16 +129,35 @@ def chooseMessage(self, id:int)
     '''
 ```
 
-### getFrequency()
+### getIDfromName()
 
 ```python
-def getFrequency(self):
+def getIDfromName(self, name:str):
     '''
-    # getFrequency()
+    # getIDfromName()
+    name으로부터 message의 ID를 구한다.
+
+    Params :
+        name `str` - message의 이름
+    Returns :
+        id `int` - message의 id
+        None - 값이 없을 때
+    '''
+```
+
+### getMessageFrequency()
+
+```python
+def getMessageFrequency(self, id:int=None):
+    '''
+    # getMessageFrequency()
     수신 받은 message의 빈도를 출력한다.
 
+    Params :
+        (optical) id `int` - Message ID
     Returns :
-        [names, counts]
+        (default) `[names, counts]`
+        (others) `counts`
         names `list` - message의 이름
         counts `list` - message의 빈도 값
     '''
@@ -146,15 +166,22 @@ def getFrequency(self):
 ### getMessageList()
 
 ```python
-def getMessageList(self):
+def getMessageList(self, selectId:bool=False, selectNames:bool=False, selectCounts:bool=False):
     '''
     # getMessageList()
     수신 받은 Message의 목록을 반환한다.
     갱신하는 함수는 `updateMessageList()`
 
+    Params :
+        (optical) selectId `bool` - MSG ID 값을 리스트로 반환
+        (optical) selectNames `bool` -  Message의 이름 값을 리스트로 반환
+        (optical) selectCounts `bool` -  Message의 총 빈도 값을 리스트로 반환
     Returns :
-        self.msgs_dict `dict`
-        {id:[name, instance, count]}
+        (default) self.msgs_dict `dict` `{ id : [ name, instance, count ] }`
+        (selectId) data `list` `[ids]`
+        (selectName) data `list` `[names]`
+        (selectCounts) data `list` `[couts]`
+        (selectId|selectName) data `list` `[id, names]`
     '''
 ```
 

@@ -39,8 +39,8 @@ class MiniLink():
 
         Params :
             port - 연결할 포트
-            baudrate `int` - 보드레이트
-            MSG_ID `int` - Message ID
+            baudrate `int` - 보드레이트 (default 115200)
+            (optical) MSG_ID `int` - Message ID
 
         Returns :
             0 - 선택됨
@@ -91,33 +91,79 @@ class MiniLink():
         return 0
 
 
-    def getFrequency(self):
+    def getIDfromName(self, name:str):
         '''
-        # getFrequency()
+        # getIDfromName()
+        name으로부터 message의 ID를 구한다.
+
+        Params :
+            name `str` - message의 이름
+        Returns :
+            id `int` - message의 id
+            None - 값이 없을 때
+        '''
+
+        lists:list = self.getMessageList(selectId=True, selectNames=True)
+        if(name not in lists[1]):
+            return None
+
+        return lists[0][lists[1].index(name)]
+
+
+    def getMessageFrequency(self, id:int=None):
+        '''
+        # getMessageFrequency()
         수신 받은 message의 빈도를 출력한다.
 
+        Params :
+            (optical) id `int` - Message ID
         Returns :
-            [names, counts]
+            (default) `[names, counts]`
+            (others) `counts`
             names `list` - message의 이름
             counts `list` - message의 빈도 값
         '''
-        names:list= [i[0] for i in self.msgs_dict.values()]
-        counts:list=  [i[2] for i in self.msgs_dict.values()]
 
-        return [names, counts]
+        if(id and id in self.getMessageList(selectId=True)):
+            return self.msgs_dict[id][2]
+
+        return self.getMessageList(selectNames=True, selectCounts=True)
 
 
-    def getMessageList(self):
+    def getMessageList(self, selectId:bool=False, selectNames:bool=False, selectCounts:bool=False):
         '''
-        # getMessageList()
-        수신 받은 Message의 목록을 반환한다.
-        갱신하는 함수는 `updateMessageList()`
+        # getmessagelist()
+        수신 받은 message의 목록을 반환한다.
+        갱신하는 함수는 `updatemessagelist()`
 
-        Returns :
-            self.msgs_dict `dict`
-            {id:[name, instance, count]}
+        params :
+            (optical) selectid `bool` - msg id 값을 리스트로 반환
+            (optical) selectnames `bool` -  message의 이름 값을 리스트로 반환
+            (optical) selectcounts `bool` -  message의 총 빈도 값을 리스트로 반환
+        returns :
+            (default) self.msgs_dict `dict` `{ id : [ name, instance, count ] }`
+            (selectid) data `list` `[ids]`
+            (selectname) data `list` `[names]`
+            (selectcounts) data `list` `[couts]`
+            (selectid|selectname) data `list` `[id, names]`
         '''
-        return self.msgs_dict
+
+        if((selectId | selectNames | selectCounts) == False):
+            return self.msgs_dict
+
+        data : list = []
+        if(selectId):
+            data.append(list(self.msgs_dict.keys()))
+        if(selectNames):
+            data.append([i[0] for i in self.msgs_dict.values()])
+        if(selectCounts):
+            data.append([i[2] for i in self.msgs_dict.values()])
+
+        # 만약 값이 하나면 1차원 리스트로 반환
+        if(len(data)==1):
+            data = data[0]
+
+        return data
 
 
     def getMessageName(self, id:int=None):
@@ -218,7 +264,7 @@ class MiniLink():
             messageName:str = self.xmlHandler.getMessageName(msg_id)
 
             saveLogFromList("packet-raw", data[:length], isHex=True)
-            saveLogFromList("msg_frequency", self.getFrequency()[1], columnName=self.getFrequency()[0])
+            saveLogFromList("msg_frequency", self.getMessageFrequency()[1], columnName=self.getMessageFrequency()[0])
             saveLogFromList(f"{messageName}", self.xmlHandler.parser(msg_id, payload), columnName=self.xmlHandler.getMessageColumnNames(msg_id))
 
         # print or return only selected value 
