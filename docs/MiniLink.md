@@ -161,11 +161,13 @@ def getMessageList(self):
 ### getMessageName()
 
 ```python
-def getMessageName(self):
+def getMessageName(self, id:int=None):
     '''
     # getMessageName()
-    현재 반환(출력)하고 있는 Message의 이름을 반환한다.
+    Message의 이름을 반환한다.
 
+    Params :
+        id `int` - 원하는 MSG ID. 기본값은 None(현재 반환하는 값)
     Returns :
         name `str`
     '''
@@ -174,11 +176,13 @@ def getMessageName(self):
 ### getMessageColumnNames()
 
 ```python
-def getMessageColumnNames(self):
+def getMessageColumnNames(self, id:int=None):
     '''
     # getMessageColumnNames()
-    현재 반환(출력)하고 있는 Message의 속성들의 이름 출력한다.
+    Message의 속성들의 이름 출력한다.
 
+    Params :
+        id `int` - 원하는 MSG ID. 기본값은 None(현재 반환하는 값)
     Returns :
         name `list(str)`
     '''
@@ -187,11 +191,13 @@ def getMessageColumnNames(self):
 ### getMessageColumnTypes()
 
 ```python
-def getMessageColumnTypes(self):
+def getMessageColumnTypes(self, id:int=None):
     '''
     # getMessageColumnTypes()
-    현재 반환(출력)하고 있는 Message의 속성들의 타입 출력한다.
+    Message의 속성들의 타입 출력한다.
 
+    Params :
+        id `int` - 원하는 MSG ID. 기본값은 None(현재 반환하는 값)
     Returns :
         name `list(str)`
     '''
