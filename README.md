@@ -4,12 +4,16 @@
 
 STM32-FC 데이터 읽기 & 파라미터 수정을 위한 CLI 프로그램
 
+## 실행 환경
+
+- Python >= 3.10
+
 ## 실행 방법
 
 ### 1. 패키지 설치 (최초 1회만)
 
 ```bash
-pip isntall pyserial questionary keyboard numpy
+pip install pyserial questionary pynput numpy
 ```
 
 ### 2. 실행
@@ -18,7 +22,7 @@ pip isntall pyserial questionary keyboard numpy
 python main.py
 ```
 
-### 3. FC가 연결된 포트 선택 
+### 3. FC가 연결된 포트 선택
 
 ```bash
 # 아래에 나오는 포트 목록은 컴퓨터마다 다를 수 있습니다.
@@ -26,6 +30,7 @@ python main.py
  » COM3 - STMicroelectronics Virtual COM Port(COM3)
    a) EXIT
 ```
+
 화살표 키로 이동, Enter로 선택
 
 ### 4. Baud rate 선택
@@ -51,7 +56,6 @@ python main.py
 문구가 나오면 연결되어 동작하고 있는 것이다.<br>
 기본 값은 log 폴더에 로그가 생성된다.
 
-
 ### 5. 메뉴 선택
 
 - `m` : 메뉴 열기
@@ -67,7 +71,6 @@ python main.py
    65 : RC_CHANNELS
    116 : SCALED_IMU2
 ```
-
 
 ### 6. 결과 확인
 
@@ -86,7 +89,6 @@ $ python main.py
 [352388, -65, 305, 970, 152, -243, -60, 0, 0, 0, 0]
 [352489, -60, 305, 969, 182, -335, -60, 0, 0, 0, 0]
 ```
-
 
 ## 코드 분석
 
