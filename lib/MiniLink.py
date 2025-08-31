@@ -279,14 +279,14 @@ class MiniLink():
         return unpacked_data
 
 
-    def send(self, data : list):
+    def send(self, msg_id:int, payload:list):
         '''
         # send()
         FC에 message 전송한다.
 
         Params :
-            data `list` 
-            [MSG ID, [Payload]]
+            msg_id `int`
+            payload `list` 
         
         Returns :
             0 : 정상 송신
@@ -297,10 +297,10 @@ class MiniLink():
             self.packet['SEQ'] = self.packet['SEQ'] + 1
 
             tx : list = [MINILINK_VERSION]
-            tx.append(7+len(data[1]))
+            tx.append(7+len(payload))
             tx.append(int(self.packet['SEQ']))
-            tx = tx + [(int(data[0]) & 0xff), (int(data[0]) >> 8)]
-            tx = tx + data[1]
+            tx = tx + [(int(msg_id) & 0xff), (int(msg_id) >> 8)]
+            tx = tx + payload
 
             crc = int(self.__calculate_crc(tx, len(tx)+2))
             tx = tx + [(crc >> 8), (crc & 0xff)]

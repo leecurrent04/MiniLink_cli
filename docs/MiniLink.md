@@ -264,14 +264,14 @@ def read(self, enPrint:bool=False, enLog:bool=False):
 ### send()
 
 ```python
-def send(self, data : list):
+def send(self, msg_id:int, payload:list):
     '''
     # send()
     FC에 message 전송한다.
 
     Params :
-        data `list` 
-        [MSG ID, [Payload]]
+        msg_id `int`
+        payload `list` 
     
     Returns :
         0 : 정상 송신
