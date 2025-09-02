@@ -106,6 +106,7 @@ class MiniLink():
             print(f"[{CLI_NAME}] invaild message id")
             return 1
 
+        # print(self.xmlHandler.getMessageColumnNames(id))
         self.__MSG_ID = id
 
         return 0
@@ -298,14 +299,14 @@ class MiniLink():
 
         return unpacked_data
 
-    def send(self, msg_id: int, payload: list):
+    def send(self, data: list):
         '''
         # send()
         FC에 message 전송한다.
 
         Params :
-            msg_id `int`
-            payload `list`
+            data `list` 
+            [MSG ID, [Payload]]
 
         Returns :
             0 : 정상 송신
@@ -316,10 +317,10 @@ class MiniLink():
             self.packet['SEQ'] = self.packet['SEQ'] + 1
 
             tx: list = [MINILINK_VERSION]
-            tx.append(7+len(payload))
+            tx.append(7+len(data[1]))
             tx.append(int(self.packet['SEQ']))
-            tx = tx + [(msg_id & 0xff), (msg_id >> 8)]
-            tx = tx + payload
+            tx = tx + [(int(data[0]) & 0xff), (int(data[0]) >> 8)]
+            tx = tx + data[1]
 
             crc = int(self.__calculate_crc(tx, len(tx)+2))
             tx = tx + [(crc >> 8), (crc & 0xff)]
