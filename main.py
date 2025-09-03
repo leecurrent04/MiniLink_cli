@@ -1,4 +1,4 @@
-from lib.MiniLink import MiniLink
+from lib.MiniLink.MiniLink import MiniLink
 from lib.userInputHandler import UserInputHandler
 
 mav = MiniLink()
