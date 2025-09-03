@@ -186,7 +186,9 @@ class UserInputHandler():
 
         match(answer):
             case "s) Change message": return ['chg_msg', self.chooseMessage()]
-            case "t) Send message": return ['send_msg', self.input_msg_mannaul()]
+            case "t) Send message": 
+                msg_id, payload = self.input_msg_mannaul()
+                return ['send_msg', msg_id, payload]
             case "q) QUIT": sys.exit()
             case "x) ../": return [None, None]
 
@@ -198,7 +200,6 @@ class UserInputHandler():
         Params :
 
         Returns :
-            `list` `[msg_id, payload]`
             msg_id `int`  - Message ID
             payload `list` - payload data
         '''
@@ -225,7 +226,7 @@ class UserInputHandler():
             payload.append(tmp)
             tmp = None
 
-        return [msg_id, payload]
+        return msg_id, payload
 
     # __input_int
     # @detail : 정수 값만 입력 받는 메소드

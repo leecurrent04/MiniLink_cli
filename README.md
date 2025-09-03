@@ -4,25 +4,34 @@
 
 STM32-FC 데이터 읽기 & 파라미터 수정을 위한 CLI 프로그램
 
-## 실행 환경
+## How to install
+
+#### Requirement
 
 - Python >= 3.10
 
-## 실행 방법
+### 1. Project Clone
 
-### 1. 패키지 설치 (최초 1회만)
+```bash
+git clone --recurse-submodules https://github.com/NARAE-INHA-UNIV/MiniLink_cli
+cd MiniLink_cli
+```
+
+### 2. 패키지 설치 (최초 1회만)
 
 ```bash
 pip install pyserial questionary pynput numpy
 ```
 
-### 2. 실행
+## How to run
+
+### 1. 실행
 
 ```bash
 python main.py
 ```
 
-### 3. FC가 연결된 포트 선택
+### 2. FC가 연결된 포트 선택
 
 ```bash
 # 아래에 나오는 포트 목록은 컴퓨터마다 다를 수 있습니다.
@@ -33,7 +42,7 @@ python main.py
 
 화살표 키로 이동, Enter로 선택
 
-### 4. Baud rate 선택
+### 3. Baud rate 선택
 
 ```bash
 ? Choose baudrate : (Use arrow keys)
@@ -56,7 +65,7 @@ python main.py
 문구가 나오면 연결되어 동작하고 있는 것이다.<br>
 기본 값은 log 폴더에 로그가 생성된다.
 
-### 5. 메뉴 선택
+### 4. 메뉴 선택
 
 - `m` : 메뉴 열기
 - `s` : message 변경
@@ -72,7 +81,7 @@ python main.py
    116 : SCALED_IMU2
 ```
 
-### 6. 결과 확인
+### 5. 결과 확인
 
 ```bash
 $ python main.py
@@ -90,6 +99,10 @@ $ python main.py
 [352489, -60, 305, 969, 182, -335, -60, 0, 0, 0, 0]
 ```
 
-## 코드 분석
+## How to update
 
-- [(doc) MiniLink.md](./docs/MiniLink.md) : MiniLink에서 사용하는 변수나 함수에 대한 설명
+```bash
+git pull
+git submodule update
+```
+ 

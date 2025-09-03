@@ -1,4 +1,4 @@
-from lib.MiniLink import MiniLink
+from lib.MiniLink.MiniLink import MiniLink
 from lib.userInputHandler import UserInputHandler
 
 mav = MiniLink()
@@ -13,7 +13,7 @@ while True:
     retVal: list = userInput.whileInputHandler()
     match(retVal[0]):
         case 'chg_msg': mav.chooseMessage(retVal[1])
-        case 'send_msg': mav.send(retVal[1])
+        case 'send_msg': mav.send(retVal[1], retVal[2])
 
     # True or False
     data: list = mav.read(enPrint=True, enLog=True)
