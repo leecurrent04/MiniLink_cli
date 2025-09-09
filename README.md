@@ -103,6 +103,6 @@ $ python main.py
 
 ```bash
 git pull
-git submodule update
+git submodule update --remote
 ```
  

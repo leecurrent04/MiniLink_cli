@@ -6,7 +6,8 @@ userInput = UserInputHandler()
 
 port, baudrate = userInput.chooseInit()
 mav.connect(port, baudrate)
-
+print("[MiniLink] Press 'm' key to open the memu.")
+            
 userInput.updateMessageList(mav.getMessageList())
 
 while True:
